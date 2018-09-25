@@ -1,5 +1,6 @@
 const graphql = require('graphql');
-const _ = require('lodash');
+//const _ = require('lodash');
+const axios = require('axios');
 const { 
 	GraphQLObjectType,
 	GraphQLString,
@@ -7,10 +8,20 @@ const {
 	GraphQLSchema
 } = graphql;
 
-const users = [
-	{ id: '23', firstName: 'Bill', age: 20 },
-	{ id: '47', firstName: 'Samantha', age: 21}
-];
+
+/**
+ * Definition Company Type for GraphQL
+ * @type {GraphQLObjectType} - Create GraphQL object define a Company type 
+ */
+const CompanyType = new GraphQLObjectType({
+	name: 'Company',
+	fields: {
+		id: { type: GraphQLString },
+		name: { type: GraphQLString },
+		description: { type: GraphQLString }
+	}
+});
+
 /**
  * Definition User Type for GraphQL
  * @type {GraphQLObjectType} - Create GraphQL object define a User type 
@@ -20,10 +31,16 @@ const UserType = new GraphQLObjectType({
 	fields: {
 		id: { type: GraphQLString },
 		firstName: { type: GraphQLString},
-		age: { type: GraphQLInt } 
+		age: { type: GraphQLInt },
+		company: { 
+			type: CompanyType,
+			resolve(parentValue, args) {
+				return axios.get(`http://localhost:3000/companies/${parentValue.companyId}`)
+					.then(resp => resp.data);
+			}
+		}
 	}
 });
-
 /**
  * Definition of a Root query for the data structure entry-point
  * If you give me arg of id in type String, will return the UserType with that id
@@ -40,8 +57,10 @@ const RootQuery = new GraphQLObjectType({
 				}
 			},
 			resolve(parentValue, args) {
-				/* data of that UserType with id */
-				return _.find(users, { id: args.id });
+				/* data of that UserType with id
+				Can return a promise */
+				return axios.get(`http://localhost:3000/users/${args.id}`)
+					.then(resp => resp.data);
 			}
 		}
 	}
